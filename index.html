@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Opara — Suivi de chantier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#FF5F15;
+    --orange-soft:#FFE9DF;
+    --dark:#0D1E28;
+    --dark-2:#16323F;
+    --gris:#6B7B83;
+    --gris-clair:#EEF2F3;
+    --blanc:#FFFFFF;
+    --ok:#1F9D6B;
+    --warn:#E8A33D;
+    --crit:#D7443E;
+    --ombre:0 2px 12px rgba(13,30,40,.08);
+    --ombre-fort:0 6px 24px rgba(13,30,40,.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    font-family:'Poppins',sans-serif;
+    background:var(--gris-clair);
+    color:var(--dark);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--gris-clair);position:relative;padding-bottom:24px}
+
+  /* ---- HEADER ---- */
+  .topbar{
+    background:var(--dark);color:var(--blanc);
+    padding:18px 20px;display:flex;align-items:center;gap:12px;
+    position:sticky;top:0;z-index:50;box-shadow:var(--ombre);
+  }
+  .topbar .logo-dot{width:10px;height:10px;border-radius:50%;background:var(--orange);flex:none}
+  .topbar h1{font-size:17px;font-weight:600;letter-spacing:.3px}
+  .topbar .back{
+    background:none;border:none;color:var(--blanc);font-size:22px;
+    cursor:pointer;display:flex;align-items:center;padding:0;margin-right:2px;
+  }
+  .topbar .sub{font-size:12px;color:#9DB2BC;font-weight:400;margin-top:1px}
+
+  /* ---- CONTENU ---- */
+  .content{padding:18px 16px}
+  .section-title{font-size:13px;font-weight:600;color:var(--gris);text-transform:uppercase;letter-spacing:.6px;margin:8px 4px 12px}
+
+  /* ---- CARTE CHANTIER ---- */
+  .card{
+    background:var(--blanc);border-radius:16px;padding:16px;margin-bottom:12px;
+    box-shadow:var(--ombre);cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;
+    border:1px solid rgba(13,30,40,.04);
+  }
+  .card:active{transform:scale(.985);box-shadow:var(--ombre-fort)}
+  .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+  .card-client{font-size:16px;font-weight:600;color:var(--dark);line-height:1.25}
+  .card-adr{font-size:13px;color:var(--gris);margin-top:2px;display:flex;align-items:center;gap:4px}
+  .badge{font-size:11px;font-weight:600;padding:4px 9px;border-radius:20px;white-space:nowrap;flex:none}
+  .badge.prep{background:#E7EEF1;color:var(--dark-2)}
+  .badge.cours{background:var(--orange-soft);color:var(--orange)}
+  .badge.recep{background:#E3F3EC;color:var(--ok)}
+  .badge.termine{background:#E3F3EC;color:var(--ok)}
+  .badge.pause{background:#FBEEDB;color:var(--warn)}
+
+  /* progression */
+  .progress-wrap{margin-top:12px}
+  .progress-info{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+  .progress-info .pct{font-weight:600;color:var(--orange)}
+  .progress-bar{height:7px;background:var(--gris-clair);border-radius:10px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),#ff7a3d);border-radius:10px;transition:width .4s ease}
+  .card-foot{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--gris)}
+  .card-foot .chip{display:flex;align-items:center;gap:4px}
+  .card-foot .chip.alert{color:var(--crit);font-weight:600}
+
+  /* ---- BOUTON PRINCIPAL ---- */
+  .btn{
+    width:100%;border:none;border-radius:14px;padding:15px;font-family:inherit;
+    font-size:15px;font-weight:600;cursor:pointer;transition:transform .1s,opacity .2s;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn:active{transform:scale(.98)}
+  .btn-primary{background:var(--orange);color:var(--blanc);box-shadow:0 4px 14px rgba(255,95,21,.3)}
+  .btn-ghost{background:var(--blanc);color:var(--dark);border:1.5px solid #DCE4E7}
+  .btn-add{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;width:calc(100% - 32px);max-width:448px;z-index:40}
+  .btn-add:active{transform:translateX(-50%) scale(.98)}
+
+  /* ---- VUE CHANTIER : HEADER ---- */
+  .chantier-hero{background:var(--dark);color:var(--blanc);padding:20px;border-radius:0 0 22px 22px;margin-bottom:6px}
+  .chantier-hero .client{font-size:21px;font-weight:700;line-height:1.2}
+  .chantier-hero .adr{font-size:13px;color:#9DB2BC;margin-top:4px}
+  .hero-stats{display:flex;gap:10px;margin-top:16px}
+  .hero-stat{flex:1;background:rgba(255,255,255,.07);border-radius:12px;padding:11px 12px}
+  .hero-stat .lbl{font-size:10px;color:#9DB2BC;text-transform:uppercase;letter-spacing:.5px}
+  .hero-stat .val{font-size:17px;font-weight:700;margin-top:3px}
+  .hero-stat .val.orange{color:var(--orange)}
+
+  /* ---- ONGLETS INTERNES ---- */
+  .tabs{display:flex;gap:4px;background:var(--blanc);padding:6px;border-radius:14px;margin:14px 16px;box-shadow:var(--ombre);overflow-x:auto}
+  .tab{flex:1;border:none;background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--gris);padding:9px 6px;border-radius:9px;cursor:pointer;white-space:nowrap;transition:all .15s}
+  .tab.active{background:var(--orange);color:var(--blanc)}
+
+  /* ---- LOT (avancement) ---- */
+  .lot{background:var(--blanc);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--ombre)}
+  .lot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .lot-nom{font-size:15px;font-weight:600}
+  .lot-pct{font-size:15px;font-weight:700;color:var(--orange)}
+  .lot-statut{font-size:11px;color:var(--gris);margin-bottom:10px}
+  .slider{-webkit-appearance:none;width:100%;height:6px;border-radius:10px;background:var(--gris-clair);outline:none;margin:6px 0}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--orange);cursor:pointer;box-shadow:0 2px 6px rgba(255,95,21,.4);border:3px solid #fff}
+  .slider::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:var(--orange);cursor:pointer;border:3px solid #fff}
+  .lot-actions{display:flex;gap:8px;margin-top:8px}
+  .mini-btn{flex:1;font-size:12px;font-weight:600;padding:8px;border-radius:9px;border:1.5px solid #DCE4E7;background:#fff;color:var(--dark-2);cursor:pointer}
+  .mini-btn.save{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .mini-btn:active{transform:scale(.97)}
+
+  /* ---- LISTE DIAGNOSTICS (conversion) ---- */
+  .diag{background:var(--blanc);border-radius:14px;padding:15px 16px;margin-bottom:10px;box-shadow:var(--ombre)}
+  .diag-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .diag-client{font-size:15px;font-weight:600}
+  .diag-meta{font-size:12px;color:var(--gris);margin-top:3px;line-height:1.5}
+  .diag-budget{font-size:13px;font-weight:600;color:var(--dark-2);margin-top:6px}
+  .diag-tag{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--orange-soft);color:var(--orange)}
+  .diag-tag.indic{background:#E7EEF1;color:var(--gris)}
+
+  /* ---- ÉTATS ---- */
+  .empty{text-align:center;padding:50px 24px;color:var(--gris)}
+  .empty .ico{font-size:42px;margin-bottom:12px;opacity:.4}
+  .empty p{font-size:14px;line-height:1.5}
+  .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 0;color:var(--gris);gap:14px}
+  .spinner{width:34px;height:34px;border:3px solid var(--gris-clair);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;box-shadow:var(--ombre-fort);z-index:100;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%}
+  .toast.show{opacity:1}
+  .toast.err{background:var(--crit)}
+
+  /* ---- MODAL ---- */
+  .modal-bg{position:fixed;inset:0;background:rgba(13,30,40,.5);z-index:90;display:none;align-items:flex-end;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding:22px 20px 28px;animation:slideup .25s ease}
+  @keyframes slideup{from{transform:translateY(40px);opacity:.6}to{transform:translateY(0);opacity:1}}
+  .modal h2{font-size:18px;font-weight:700;margin-bottom:6px}
+  .modal p{font-size:13px;color:var(--gris);line-height:1.5;margin-bottom:18px}
+  .modal-actions{display:flex;gap:10px;margin-top:8px}
+  .fade-in{animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---- RÉSERVES ---- */
+  .res-card{background:var(--blanc);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--ombre);border-left:4px solid var(--crit)}
+  .res-card.res-done{border-left-color:var(--ok);opacity:.72}
+  .res-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+  .res-lot{font-size:14px;font-weight:600;color:var(--dark)}
+  .res-grav{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px}
+  .res-grav.min{background:#E7EEF1;color:var(--gris)}
+  .res-grav.maj{background:#FBEEDB;color:var(--warn)}
+  .res-grav.crit{background:#FBE3E2;color:var(--crit)}
+  .res-desc{font-size:14px;color:var(--dark-2);line-height:1.45}
+  .res-ent{font-size:12px;color:var(--gris);margin-top:6px}
+  .res-foot{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+  .res-photo{font-size:12px;color:var(--orange);font-weight:600;text-decoration:none}
+  .res-levee{font-size:12px;color:var(--ok);font-weight:600}
+  .res-foot .mini-btn{flex:1;min-width:120px}
+
+  /* ---- FORMULAIRE ---- */
+  .f-label{display:block;font-size:12px;font-weight:600;color:var(--gris);margin:12px 0 5px}
+  .f-input{width:100%;font-family:inherit;font-size:14px;padding:11px 12px;border:1.5px solid #DCE4E7;border-radius:11px;background:#fff;color:var(--dark);outline:none}
+  .f-input:focus{border-color:var(--orange)}
+  textarea.f-input{resize:vertical}
+  .f-file{width:100%;font-family:inherit;font-size:13px;padding:10px;border:1.5px dashed #C5D0D4;border-radius:11px;background:#FAFBFB;margin-top:2px}
+  .r-preview-img{width:100%;max-height:160px;object-fit:cover;border-radius:11px;margin-top:10px}
+  .r-preview-txt{font-size:12px;color:var(--ok);font-weight:600;margin-top:5px}
+
+  /* ---- ÉCRAN PIN ---- */
+  .pin-screen{position:fixed;inset:0;background:var(--dark);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px}
+  .pin-logo{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .pin-logo .dot{width:14px;height:14px;border-radius:50%;background:var(--orange)}
+  .pin-logo span{color:#fff;font-size:22px;font-weight:700;letter-spacing:.5px}
+  .pin-sub{color:#9DB2BC;font-size:13px;margin-bottom:36px}
+  .pin-dots{display:flex;gap:14px;margin-bottom:36px}
+  .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid #3A5562;transition:all .15s}
+  .pin-dot.filled{background:var(--orange);border-color:var(--orange)}
+  .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:280px;width:100%}
+  .pin-key{aspect-ratio:1;border:none;background:rgba(255,255,255,.07);color:#fff;font-size:26px;font-weight:600;border-radius:50%;cursor:pointer;font-family:inherit;transition:background .12s;display:flex;align-items:center;justify-content:center}
+  .pin-key:active{background:rgba(255,255,255,.2)}
+  .pin-key.empty{background:none;cursor:default}
+  .pin-err{color:var(--crit);font-size:13px;height:18px;margin-bottom:10px;font-weight:500}
+
+</style>
+</head>
+<body>
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-logo"><span class="dot"></span><span>OPARA</span></div>
+  <div class="pin-sub">Suivi de chantier</div>
+  <div class="pin-err" id="pin-err"></div>
+  <div class="pin-dots" id="pin-dots"></div>
+  <div class="pin-pad" id="pin-pad"></div>
+</div>
+<div class="app">
+  <div class="topbar" id="topbar">
+    <span class="logo-dot"></span>
+    <div>
+      <h1 id="topbar-title">Opara — Suivi</h1>
+      <div class="sub" id="topbar-sub">Chantiers en cours</div>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="loader"><div class="spinner"></div><span>Chargement…</span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+/* ---- PIN d'accès ---- */
+const PIN_CODE = '1996';          // ⚠️ mets ton propre code à 4 chiffres
+let pinSaisi = '';
+ 
+function initPin(){
+  const dots = document.getElementById('pin-dots');
+  dots.innerHTML = [0,1,2,3].map(()=>'<div class="pin-dot"></div>').join('');
+  const pad = document.getElementById('pin-pad');
+  const touches = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  pad.innerHTML = touches.map(t=>{
+    if(t==='') return '<div class="pin-key empty"></div>';
+    return `<button class="pin-key" onclick="tapPin('${t}')">${t}</button>`;
+  }).join('');
+}
+ 
+function tapPin(t){
+  const err = document.getElementById('pin-err');
+  err.textContent='';
+  if(t==='⌫'){ pinSaisi = pinSaisi.slice(0,-1); }
+  else if(pinSaisi.length<4){ pinSaisi += t; }
+  // maj des points
+  document.querySelectorAll('.pin-dot').forEach((d,i)=>{
+    d.classList.toggle('filled', i<pinSaisi.length);
+  });
+  // vérif quand 4 chiffres
+  if(pinSaisi.length===4){
+    setTimeout(()=>{
+      if(pinSaisi===PIN_CODE){
+        document.getElementById('pin-screen').style.display='none';
+        renderAccueil();
+      } else {
+        err.textContent='Code incorrect';
+        pinSaisi='';
+        document.querySelectorAll('.pin-dot').forEach(d=>d.classList.remove('filled'));
+      }
+    }, 150);
+  }
+}
+/* ============================================================
+   CONFIG — COLLE TON URL API ICI (celle qui finit par /exec)
+   ============================================================ */
+const API_URL = 'https://script.google.com/macros/s/AKfycbxudA9xGCZXWr-nPRRmOH8CbIiZ9IZaOStCwplfuCaQ8f1cdmt4YtWeAkZjAqRtRUvy/exec';
+const API_SECRET = 'Betopara2A';
+
+/* ---- état app ---- */
+let STATE = { vue:'accueil', chantierId:null, data:null };
+
+/* ---- helpers API ---- */
+async function apiGet(action, params={}){
+  const qs = new URLSearchParams(Object.assign({action, secret:API_SECRET}, params)).toString();
+  const res = await fetch(API_URL + '?' + qs);
+  return res.json();
+}
+async function apiPost(body){
+  body.secret = API_SECRET;
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(body)
+  });
+  return res.json();
+}
+
+/* ---- UI utils ---- */
+function toast(msg, err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(err?' err':'');
+  setTimeout(()=>t.className='toast',2200);
+}
+function loader(){ return '<div class="loader"><div class="spinner"></div><span>Chargement…</span></div>'; }
+function badgeClass(s){
+  const m={'En préparation':'prep','En cours':'cours','En réception':'recep','Terminé':'termine','En pause':'pause','À venir':'prep'};
+  return m[s]||'prep';
+}
+function fmtMontant(v){
+  if(v===''||v===null||v===undefined) return '—';
+  const n=Number(v); if(isNaN(n)) return v;
+  return n.toLocaleString('fr-FR')+' €';
+}
+
+/* ============================================================
+   VUE ACCUEIL
+   ============================================================ */
+async function renderAccueil(){
+  STATE.vue='accueil'; STATE.chantierId=null;
+  document.getElementById('topbar-title').textContent='Opara — Suivi';
+  document.getElementById('topbar-sub').textContent='Chantiers en cours';
+  document.getElementById('topbar').querySelector('.back')?.remove();
+  const c=document.getElementById('content');
+  c.innerHTML=loader();
+
+  const chantiers=await apiGet('getChantiers');
+  let html='<div class="section-title">Mes chantiers</div>';
+
+  if(!chantiers || chantiers.length===0 || chantiers.error){
+    html+=`<div class="empty"><div class="ico">🏗️</div><p>Aucun chantier pour l'instant.<br>Convertis un diagnostic Pack 1 pour démarrer.</p></div>`;
+  } else {
+    chantiers.forEach(ch=>{
+      const pct=Number(ch.avancement_global)||0;
+      const alert = ch.reserves_ouvertes>0
+        ? `<span class="chip alert">⚠ ${ch.reserves_ouvertes} réserve${ch.reserves_ouvertes>1?'s':''}</span>` : '';
+      html+=`
+      <div class="card fade-in" onclick="ouvrirChantier('${ch.chantier_id}')">
+        <div class="card-head">
+          <div>
+            <div class="card-client">${ch.client||'—'}</div>
+            <div class="card-adr">📍 ${ch.adresse||'Adresse non renseignée'}</div>
+          </div>
+          <span class="badge ${badgeClass(ch.statut)}">${ch.statut||'—'}</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-info"><span>Avancement</span><span class="pct">${pct}%</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="card-foot">
+          <span class="chip">💶 ${fmtMontant(ch.budget_total)}</span>
+          ${alert}
+        </div>
+      </div>`;
+    });
+  }
+  c.innerHTML=html;
+
+  // bouton flottant ajouter
+  if(!document.getElementById('btn-add')){
+    const b=document.createElement('button');
+    b.id='btn-add'; b.className='btn btn-primary btn-add';
+    b.innerHTML='＋ Nouveau chantier';
+    b.onclick=renderDiagnostics;
+    document.querySelector('.app').appendChild(b);
+  } else {
+    document.getElementById('btn-add').style.display='flex';
+  }
+}
+
+/* ============================================================
+   VUE DIAGNOSTICS (conversion Pack 1 → chantier)
+   ============================================================ */
+async function renderDiagnostics(){
+  STATE.vue='diagnostics';
+  document.getElementById('btn-add').style.display='none';
+  document.getElementById('topbar-title').textContent='Nouveau chantier';
+  document.getElementById('topbar-sub').textContent='Depuis un diagnostic Pack 1';
+  ajouterBack(renderAccueil);
+  const c=document.getElementById('content');
+  c.innerHTML=loader();
+
+  const diags=await apiGet('getDiagnostics');
+  let html='<div class="section-title">Diagnostics disponibles</div>';
+
+  if(!diags || diags.length===0 || diags.error){
+    html+=`<div class="empty"><div class="ico">📋</div><p>Tous les diagnostics sont déjà convertis,<br>ou aucun diagnostic disponible.</p></div>`;
+    html+=`<button class="btn btn-ghost" onclick="renderAccueil()">← Retour</button>`;
+  } else {
+    diags.forEach(d=>{
+      const chiffre = d.total_ht!=='' && d.total_ht!==null;
+      const budget = chiffre ? fmtMontant(d.total_ht) : fmtMontant(d.budget_indicatif);
+      const tag = chiffre ? `<span class="diag-tag">Chiffré Pack 1</span>` : `<span class="diag-tag indic">Indicatif</span>`;
+      html+=`
+      <div class="diag fade-in">
+        <div class="diag-head">
+          <div>
+            <div class="diag-client">${d.client}</div>
+            <div class="diag-meta">${d.type_bien||'—'} · ${d.surface_hab||'?'} m²<br>📍 ${d.adresse||'—'}</div>
+          </div>
+          ${tag}
+        </div>
+        <div class="diag-budget">💶 ${budget}</div>
+        <button class="btn btn-primary" style="margin-top:12px;padding:11px;font-size:14px"
+          onclick="convertir(${d.source_pack1_row}, this)">
+          Créer le chantier →
+        </button>
+      </div>`;
+    });
+  }
+  c.innerHTML=html;
+}
+
+async function convertir(row, btn){
+  btn.disabled=true; btn.textContent='Création en cours…';
+  const res=await apiPost({action:'creerChantierDepuisPack1', source_pack1_row:row});
+  if(res.ok){
+    toast('Chantier créé ✓');
+    if(res.drive && res.drive.warning) toast('Note Drive : '+res.drive.warning, true);
+    ouvrirChantier(res.chantier_id);
+  } else {
+    btn.disabled=false; btn.textContent='Créer le chantier →';
+    toast('Erreur : '+(res.error||'inconnue'), true);
+  }
+}
+
+/* ============================================================
+   VUE CHANTIER (header + onglets internes)
+   ============================================================ */
+let CURRENT_TAB='avancement';
+async function ouvrirChantier(id){
+  STATE.vue='chantier'; STATE.chantierId=id; CURRENT_TAB='avancement';
+  document.getElementById('btn-add').style.display='none';
+  const c=document.getElementById('content');
+  c.innerHTML=loader();
+
+  const data=await apiGet('getChantier',{id});
+  if(data.error){ toast(data.error,true); renderAccueil(); return; }
+  STATE.data=data;
+  const ch=data.chantier;
+
+  document.getElementById('topbar-title').textContent=ch.client||'Chantier';
+  document.getElementById('topbar-sub').textContent=ch.type_bien||'';
+  ajouterBack(renderAccueil);
+
+  const pct=Number(ch.avancement_global)||0;
+  const resOuv=data.reserves.filter(r=>r.statut!=='Levée').length;
+
+  c.innerHTML=`
+    <div class="chantier-hero fade-in">
+      <div class="client">${ch.client||'—'}</div>
+      <div class="adr">📍 ${ch.adresse||'—'}</div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="lbl">Avancement</div><div class="val orange">${pct}%</div></div>
+        <div class="hero-stat"><div class="lbl">Budget</div><div class="val">${fmtMontant(ch.budget_total)}</div></div>
+        <div class="hero-stat"><div class="lbl">Réserves</div><div class="val">${resOuv}</div></div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="avancement" onclick="switchTab('avancement')">Avancement</button>
+      <button class="tab" data-tab="cr" onclick="switchTab('cr')">CR</button>
+      <button class="tab" data-tab="reserves" onclick="switchTab('reserves')">Réserves</button>
+      <button class="tab" data-tab="financier" onclick="switchTab('financier')">Financier</button>
+      <button class="tab" data-tab="pv" onclick="switchTab('pv')">PV</button>
+    </div>
+    <div class="content" id="tab-content" style="padding:0 16px"></div>
+  `;
+  renderTab();
+}
+
+function switchTab(t){
+  CURRENT_TAB=t;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  renderTab();
+}
+
+function renderTab(){
+  const el=document.getElementById('tab-content');
+  if(CURRENT_TAB==='avancement') return renderAvancement(el);
+  if(CURRENT_TAB==='reserves') return renderReserves(el);
+  // onglets à venir (phase suivante)
+  el.innerHTML=`<div class="empty"><div class="ico">🚧</div><p>Module « ${CURRENT_TAB.toUpperCase()} »<br>arrive à la prochaine étape.</p></div>`;
+}
+
+/* ---- ONGLET AVANCEMENT ---- */
+function renderAvancement(el){
+  const lots=STATE.data.avancement;
+  if(!lots || lots.length===0){
+    el.innerHTML=`<div class="empty"><p>Aucun lot.</p></div>`; return;
+  }
+  let html='';
+  lots.forEach(l=>{
+    const pct=Number(l.pourcentage)||0;
+    html+=`
+    <div class="lot fade-in" id="lot-${l.avancement_id}">
+      <div class="lot-head">
+        <span class="lot-nom">${l.lot}</span>
+        <span class="lot-pct" id="pct-${l.avancement_id}">${pct}%</span>
+      </div>
+      <div class="lot-statut">${l.entreprise? l.entreprise+' · ':''}${l.statut||'Non démarré'}</div>
+      <input type="range" min="0" max="100" step="5" value="${pct}" class="slider"
+        oninput="document.getElementById('pct-${l.avancement_id}').textContent=this.value+'%'"
+        id="slider-${l.avancement_id}">
+      <div class="lot-actions">
+        <button class="mini-btn save" onclick="sauverLot('${l.avancement_id}','${STATE.chantierId}',this)">Enregistrer</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=html;
+}
+
+async function sauverLot(avId, chantierId, btn){
+  const val=Number(document.getElementById('slider-'+avId).value);
+  let statut='En cours';
+  if(val===0) statut='Non démarré';
+  else if(val===100) statut='Terminé';
+  btn.textContent='…'; btn.disabled=true;
+  const res=await apiPost({action:'majAvancement', avancement_id:avId, chantier_id:chantierId, pourcentage:val, statut:statut});
+  btn.disabled=false; btn.textContent='Enregistrer';
+ if(res.ok){
+    toast('Lot mis à jour ✓');
+    const lot=STATE.data.avancement.find(x=>x.avancement_id===avId);
+    if(lot){lot.pourcentage=val; lot.statut=statut;}
+    STATE.data.chantier.avancement_global=res.avancement_global;
+    // rafraîchit le % global affiché dans le header
+    const heroPct=document.querySelector('.hero-stat .val.orange');
+    if(heroPct) heroPct.textContent=res.avancement_global+'%';
+    // rafraîchit aussi le statut/sous-titre du lot
+    const statutEl=document.querySelector('#lot-'+avId+' .lot-statut');
+    if(statutEl){
+      const ent=lot && lot.entreprise ? lot.entreprise+' · ' : '';
+      statutEl.textContent=ent+statut;
+    }
+  } else {
+ toast('Erreur : '+(res.error||'inconnue'),true);
+  }
+}
+
+/* ============================================================
+   ONGLET RÉSERVES
+   ============================================================ */
+function renderReserves(el){
+  const reserves = STATE.data.reserves || [];
+  const ouvertes = reserves.filter(r=>r.statut!=='Levée');
+  const levees   = reserves.filter(r=>r.statut==='Levée');
+
+  let html = `<button class="btn btn-primary" style="margin:4px 0 16px;padding:13px" onclick="ouvrirFormReserve()">＋ Nouvelle réserve</button>`;
+
+  // ----- ouvertes -----
+  html += `<div class="section-title" style="color:var(--crit)">🔴 Ouvertes (${ouvertes.length})</div>`;
+  if(ouvertes.length===0){
+    html += `<div class="empty" style="padding:24px"><p>Aucune réserve ouverte 👍</p></div>`;
+  } else {
+    ouvertes.forEach(r=>{ html += carteReserve(r,true); });
+  }
+
+  // ----- levées -----
+  if(levees.length>0){
+    html += `<div class="section-title" style="color:var(--ok);margin-top:18px">✓ Levées (${levees.length})</div>`;
+    levees.forEach(r=>{ html += carteReserve(r,false); });
+  }
+
+  el.innerHTML = html;
+}
+
+function carteReserve(r, ouverte){
+  const gravClass = {'Mineure':'min','Majeure':'maj','Critique':'crit'}[r.gravite]||'min';
+  const photo = r.photo_url
+    ? `<a href="${r.photo_url}" target="_blank" class="res-photo">📷 Voir la photo</a>`
+    : '';
+  const action = ouverte
+    ? `<button class="mini-btn save" onclick="leverReserve('${r.reserve_id}',this)">Lever la réserve</button>`
+    : `<span class="res-levee">Levée le ${(r.date_levee||'').split(' ')[0]}</span>`;
+  return `
+  <div class="res-card ${ouverte?'':'res-done'} fade-in">
+    <div class="res-top">
+      <span class="res-lot">${r.lot||'—'}</span>
+      <span class="res-grav ${gravClass}">${r.gravite||'Mineure'}</span>
+    </div>
+    <div class="res-desc">${r.description||'(sans description)'}</div>
+    ${r.entreprise?`<div class="res-ent">🏢 ${r.entreprise}</div>`:''}
+    <div class="res-foot">
+      ${photo}
+      ${action}
+    </div>
+  </div>`;
+}
+
+/* ---- formulaire nouvelle réserve (modal) ---- */
+let PHOTO_RESERVE = null; // base64 en attente
+
+function ouvrirFormReserve(){
+  PHOTO_RESERVE = null;
+  const lotsOptions = ['Démolition','Plomberie','Électricité','Plâtrerie','Peinture','Climatisation','Revêtement','Menuiseries']
+    .map(l=>`<option value="${l}">${l}</option>`).join('');
+  const html = `
+    <h2>Nouvelle réserve</h2>
+    <p>Renseigne les infos. La photo est optionnelle.</p>
+    <label class="f-label">Lot concerné</label>
+    <select id="r-lot" class="f-input">${lotsOptions}</select>
+    <label class="f-label">Gravité</label>
+    <select id="r-grav" class="f-input">
+      <option value="Mineure">Mineure</option>
+      <option value="Majeure">Majeure</option>
+      <option value="Critique">Critique</option>
+    </select>
+    <label class="f-label">Entreprise (optionnel)</label>
+    <input id="r-ent" class="f-input" placeholder="Nom de l'entreprise">
+    <label class="f-label">Description</label>
+    <textarea id="r-desc" class="f-input" rows="3" placeholder="Décris la réserve…"></textarea>
+    <label class="f-label">Photo (optionnel)</label>
+    <input type="file" accept="image/*" capture="environment" id="r-photo" class="f-file" onchange="prendrePhoto(this)">
+    <div id="r-photo-preview"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fermerModal()">Annuler</button>
+      <button class="btn btn-primary" id="r-submit" onclick="creerReserve(this)">Créer</button>
+    </div>`;
+  ouvrirModal(html);
+}
+
+function prendrePhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    const dataUrl = e.target.result;
+    PHOTO_RESERVE = {
+      base64: dataUrl.split(',')[1],
+      mimeType: file.type
+    };
+    document.getElementById('r-photo-preview').innerHTML =
+      `<img src="${dataUrl}" class="r-preview-img"><div class="r-preview-txt">✓ Photo prête</div>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function creerReserve(btn){
+  const lot  = document.getElementById('r-lot').value;
+  const grav = document.getElementById('r-grav').value;
+  const ent  = document.getElementById('r-ent').value;
+  const desc = document.getElementById('r-desc').value;
+  if(!desc.trim()){ toast('Ajoute une description',true); return; }
+
+  btn.disabled=true; btn.textContent='Création…';
+
+  let photoUrl = '';
+  // 1) upload photo si présente
+  if(PHOTO_RESERVE){
+    btn.textContent='Envoi photo…';
+    const up = await apiPost({
+      action:'uploadPhoto',
+      chantier_id: STATE.chantierId,
+      base64: PHOTO_RESERVE.base64,
+      mimeType: PHOTO_RESERVE.mimeType,
+      nomSuggere: 'reserve_'+lot
+    });
+    if(up.ok){ photoUrl = up.url; }
+    else { toast('Photo non envoyée : '+(up.error||'?'),true); }
+  }
+
+  // 2) crée la réserve
+  btn.textContent='Enregistrement…';
+  const res = await apiPost({
+    action:'saveReserve',
+    chantier_id: STATE.chantierId,
+    lot:lot, gravite:grav, entreprise:ent, description:desc,
+    photo_url: photoUrl
+  });
+
+  if(res.ok){
+    toast('Réserve créée ✓');
+    fermerModal();
+    // recharge les données du chantier puis l'onglet
+    const data = await apiGet('getChantier',{id:STATE.chantierId});
+    STATE.data = data;
+    majHeaderReserves();
+    renderReserves(document.getElementById('tab-content'));
+  } else {
+    btn.disabled=false; btn.textContent='Créer';
+    toast('Erreur : '+(res.error||'inconnue'),true);
+  }
+}
+
+async function leverReserve(reserveId, btn){
+  btn.disabled=true; btn.textContent='…';
+  const res = await apiPost({action:'leverReserve', reserve_id:reserveId});
+  if(res.ok){
+    toast('Réserve levée ✓');
+    const r = STATE.data.reserves.find(x=>x.reserve_id===reserveId);
+    if(r){ r.statut='Levée'; r.date_levee=new Date().toISOString().slice(0,10); }
+    majHeaderReserves();
+    renderReserves(document.getElementById('tab-content'));
+  } else {
+    btn.disabled=false; btn.textContent='Lever la réserve';
+    toast('Erreur : '+(res.error||'inconnue'),true);
+  }
+}
+
+function majHeaderReserves(){
+  const ouv = (STATE.data.reserves||[]).filter(r=>r.statut!=='Levée').length;
+  const stat = document.querySelectorAll('.hero-stat .val')[2];
+  if(stat) stat.textContent = ouv;
+}
+
+/* ---- modal générique ---- */
+function ouvrirModal(html){
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function fermerModal(){
+  document.getElementById('modal-bg').classList.remove('show');
+}
+
+/* ---- navigation ---- */
+function ajouterBack(fn){
+  const tb=document.getElementById('topbar');
+  if(!tb.querySelector('.back')){
+    const b=document.createElement('button');
+    b.className='back'; b.innerHTML='‹';
+    tb.insertBefore(b, tb.firstChild);
+    b.onclick=fn;
+  } else {
+    tb.querySelector('.back').onclick=fn;
+  }
+}
+
+/* ---- init ---- */
+ window.addEventListener('DOMContentLoaded',()=>{
+    initPin();
+    // l'accueil se chargera après déverrouillage (voir tapPin)
+  });
+</script>
+</body>
+</html>
